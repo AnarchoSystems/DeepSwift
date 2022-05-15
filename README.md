@@ -84,3 +84,7 @@ struct MyModel : Learner {
 
 } 
 ```
+
+## Note
+
+This API is in its infancy and therefore subject to rapid changes.
