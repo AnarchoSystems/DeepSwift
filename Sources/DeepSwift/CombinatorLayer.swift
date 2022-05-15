@@ -76,7 +76,7 @@ public extension CombinatorLayer {
     }
     
     @inlinable
-    func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> (Adjustment, Input.Adjustment) {
+    func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> (adjustment: Adjustment, backprop: Input.Adjustment) {
         let (adj1, adj2) : (dLhs: Lhs.Output.Adjustment, dRhs: Rhs.Output.Adjustment) = adjustments(auxiliaryData.0, auxiliaryData.1, auxiliaryData: auxiliaryData.2, gradient: gradient)
         let (dLhs, bp1) = lhs.adjustment(input: input, auxiliaryData: auxiliaryData.3, gradient: adj1)
         let (dRhs, bp2) = rhs.adjustment(input: input, auxiliaryData: auxiliaryData.4, gradient: adj2)

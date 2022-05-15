@@ -39,7 +39,7 @@ public struct Frozen<L : Layer> : Layer {
     }
     
     @inlinable
-    public func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> (Void, Input.Adjustment) {
+    public func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> (adjustment: Void, backprop: Input.Adjustment) {
         ((), wrapped.backprop(input: input, auxiliaryData: auxiliaryData, gradient: gradient))
     }
     

@@ -18,7 +18,7 @@ public protocol Layer : Movable, Codable {
     
     func inspectableApply(_ input: Input) -> (result: Output, auxiliaryData: AuxiliaryData)
     
-    func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> (Adjustment, Input.Adjustment)
+    func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> (adjustment: Adjustment, backprop: Input.Adjustment)
     
     func backprop(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> Input.Adjustment
     

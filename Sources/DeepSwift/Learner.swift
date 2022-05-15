@@ -32,7 +32,7 @@ public extension Learner {
         body.auxData(at: input)
     }
     
-    func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Wrapped.Output.Adjustment) -> (Adjustment, Wrapped.Input.Adjustment) {
+    func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Wrapped.Output.Adjustment) -> (adjustment: Adjustment, backprop: Wrapped.Input.Adjustment) {
         body.adjustment(input: input, auxiliaryData: auxiliaryData, gradient: gradient)
     }
     

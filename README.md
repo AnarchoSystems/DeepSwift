@@ -17,7 +17,7 @@ struct Foo : Layer {
         //...
     }
     
-    func adjustment(input: Float, auxiliaryData: Float, gradient: Float) -> (Float, Float) {
+    func adjustment(input: Float, auxiliaryData: Float, gradient: Float) -> (adjustment: Float, backprop: Float) {
         //...
     }
     

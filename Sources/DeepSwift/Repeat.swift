@@ -37,7 +37,7 @@ public struct Repeat<L : Layer> : Layer where L.Input == L.Output {
     }
     
     @inlinable
-    public func adjustment(input: L.Input, auxiliaryData: [(input: L.Input, aux: L.AuxiliaryData)], gradient: L.Output.Adjustment) -> ([L.Adjustment], L.Input.Adjustment) {
+    public func adjustment(input: L.Input, auxiliaryData: [(input: L.Input, aux: L.AuxiliaryData)], gradient: L.Output.Adjustment) -> (adjustment: [L.Adjustment], backprop: L.Input.Adjustment) {
         var adjustments = [L.Adjustment]()
         adjustments.reserveCapacity(repetitions)
         var bp = gradient

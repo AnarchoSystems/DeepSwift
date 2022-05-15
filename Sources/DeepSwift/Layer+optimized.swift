@@ -61,10 +61,12 @@ public extension Layer {
         return result
     }
     
+    /// In this method, the ```@Param```s have reference semantics. Copy this learner only after injecting the optimizer!
     mutating func ejectOptimizer() {
         DeepSwift.ejectOptimizer(in: self)
     }
     
+    /// In this method, the ```@Param```s have reference semantics. Copy this learner only after injecting the optimizer!
     func ejectingOptimizer() -> Self {
         var copy = self
         copy.ejectOptimizer()

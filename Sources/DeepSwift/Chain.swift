@@ -55,7 +55,7 @@ public struct ChainedLayers<L1 : Layer, L2: Layer> : Layer where L1.Output == L2
     }
     
     @inlinable
-    public func adjustment(input: L1.Input, auxiliaryData: AuxiliaryData, gradient: L2.Output.Adjustment) -> (Adjustment, L1.Input.Adjustment) {
+    public func adjustment(input: L1.Input, auxiliaryData: AuxiliaryData, gradient: L2.Output.Adjustment) -> (adjustment: Adjustment, backprop: L1.Input.Adjustment) {
         var adj : Adjustment = (nil, nil)
         let b2 : L2.Input.Adjustment
         let b1 : L1.Input.Adjustment
@@ -128,7 +128,7 @@ public struct Chain3<L1 : Layer, L2 : Layer, L3 : Layer> : Layer where L2.Input 
     @inlinable
     public func adjustment(input: L1.Input,
                            auxiliaryData: AuxiliaryData,
-                           gradient: L3.Output.Adjustment) -> (Adjustment, L1.Input.Adjustment) {
+                           gradient: L3.Output.Adjustment) -> (adjustment: Adjustment, backprop: L1.Input.Adjustment) {
         var adj : Adjustment = (nil, nil, nil)
         let bp3 : L3.Input.Adjustment
         let bp2 : L2.Input.Adjustment
