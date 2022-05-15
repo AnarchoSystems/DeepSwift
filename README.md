@@ -75,7 +75,7 @@ For optimizers, the current approach is to inject them locally. You can annotate
 
 While DeepSwift leaves the design of concrete layers and optimizers and the implementation of efficient numerics to other (downstream) repos, DeepSwift provides the high level API that you need so you can write:
 
-```
+```swift
 struct MyModel : Learner {
 
    var body = SomeLayer() |> SomeOtherLayer() |> ThirdLayer()
