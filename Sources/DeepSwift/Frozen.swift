@@ -25,6 +25,9 @@ public struct Frozen<L : Layer> : Layer {
     @usableFromInline
     let wrapped : L
     
+    @usableFromInline
+    init(wrapped: L) {self.wrapped = wrapped}
+    
     @inlinable
     public func apply(_ input: Input) -> Output {
         wrapped.apply(input)
