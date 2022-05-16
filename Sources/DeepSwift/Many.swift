@@ -33,7 +33,7 @@ public struct Many<L : Layer> : Layer where L.Input == L.Output {
     }
     
     @inlinable
-    public func adjustment(input: L.Input, auxiliaryData: [(input: L.Input, aux: L.AuxiliaryData)], gradient: L.Output.Adjustment) -> (adjustment: [L.Adjustment], backprop: L.Input.Adjustment) {
+    public func adjustment(input: L.Input, auxiliaryData: [(input: L.Input, aux: L.AuxiliaryData)], gradient: L.Output.Adjustment) -> (adjustment: DifferentiableArray<L.Adjustment>, backprop: L.Input.Adjustment) {
         var adjustments = [L.Adjustment]()
         adjustments.reserveCapacity(models.count)
         var bp = gradient
@@ -43,7 +43,7 @@ public struct Many<L : Layer> : Layer where L.Input == L.Output {
             bp = newBp
             adjustments.append(adj)
         }
-        return (adjustments, bp)
+        return (DifferentiableArray(adjustments), bp)
     }
     
     @inlinable
@@ -56,8 +56,8 @@ public struct Many<L : Layer> : Layer where L.Input == L.Output {
     }
     
     @inlinable
-    public mutating func move(_ adjustment: [L.Adjustment]) {
-        for (idx, adj) in adjustment.reversed().enumerated() {
+    public mutating func move(_ adjustment: DifferentiableArray<L.Adjustment>) {
+        for (idx, adj) in adjustment.content.enumerated() {
             models[idx].move(adj)
         }
     }

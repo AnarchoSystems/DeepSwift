@@ -5,43 +5,14 @@
 //  Created by Markus Kasperczyk on 15.05.22.
 //
 
-public protocol DiffArithmetic where Scalar.Scalar == Scalar, Scalar : Movable, Scalar.Adjustment == Scalar {
-    associatedtype Scalar : DiffArithmetic
-    static func *(lhs: Scalar, rhs: Self) -> Self
-    static func +(lhs: Self, rhs: Self) -> Self
-}
-
-extension Float : DiffArithmetic, Movable {
-    public typealias Scalar = Float
-    public mutating func move(_ adjustment: Self) {
-        self += adjustment
-    }
-}
-extension Double : DiffArithmetic, Movable {
-    public typealias Scalar = Double
-    public mutating func move(_ adjustment: Self) {
-        self += adjustment
-    }
-}
-extension Int : DiffArithmetic, Movable {
-    public typealias Scalar = Int
-    public mutating func move(_ adjustment: Self) {
-        self += adjustment
-    }
-}
-
-public protocol CombinatorLayer : Layer where
-Lhs.Input == Rhs.Input, Input == Lhs.Input, Input.Adjustment : DiffArithmetic,
-AuxiliaryData == (Lhs.Output, Rhs.Output, AdditionalAuxiliaries, Lhs.AuxiliaryData, Rhs.AuxiliaryData),
-Adjustment == (Lhs.Adjustment, Rhs.Adjustment) {
+public protocol CombinatorLayer : Codable where
+Lhs.Input == Rhs.Input, Input == Lhs.Input, Lhs.Adjustment.Scalar == Rhs.Adjustment.Scalar {
     
     associatedtype Input = Lhs.Input
     associatedtype Lhs : Layer
     associatedtype Rhs : Layer
     associatedtype AdditionalAuxiliaries = Void
-    associatedtype AuxiliaryData = (Lhs.Output, Rhs.Output, AdditionalAuxiliaries, Lhs.AuxiliaryData, Rhs.AuxiliaryData)
-    associatedtype Adjustment = (Lhs.Adjustment, Rhs.Adjustment)
-    associatedtype Output
+    associatedtype Output : Movable
     
     var lhs : Lhs {get set}
     var rhs : Rhs {get set}
@@ -60,40 +31,52 @@ public extension CombinatorLayer where AdditionalAuxiliaries == Void {
     
 }
 
-public extension CombinatorLayer {
+public struct Combinator<C : CombinatorLayer> : Layer {
+    
+    public typealias AuxiliaryData = (C.Lhs.Output, C.Rhs.Output, C.AdditionalAuxiliaries, C.Lhs.AuxiliaryData, C.Rhs.AuxiliaryData)
+    public typealias Adjustment = DifferentiablePair<C.Lhs.Adjustment, C.Rhs.Adjustment>
+    
+    @usableFromInline
+    var combinator : C
+    
+    public init(_ combinator: C) {self.combinator = combinator}
+    
+}
+
+public extension Combinator {
     
     @inlinable
-    func apply(_ input: Lhs.Input) -> Output {
-        combine(lhs.apply(input), rhs.apply(input))
+    func apply(_ input: C.Lhs.Input) -> C.Output {
+        combinator.combine(combinator.lhs.apply(input), combinator.rhs.apply(input))
     }
     
     @inlinable
-    func inspectableApply(_ input: Input) -> (result: Output, auxiliaryData: AuxiliaryData) {
-        let (l, dl) = lhs.inspectableApply(input)
-        let (r, dr) = rhs.inspectableApply(input)
-        let (c, dc) = inspectableCombine(l, r)
+    func inspectableApply(_ input: C.Lhs.Input) -> (result: C.Output, auxiliaryData: AuxiliaryData) {
+        let (l, dl) = combinator.lhs.inspectableApply(input)
+        let (r, dr) = combinator.rhs.inspectableApply(input)
+        let (c, dc) = combinator.inspectableCombine(l, r)
         return (c, (l, r, dc, dl, dr))
     }
     
     @inlinable
-    func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> (adjustment: Adjustment, backprop: Input.Adjustment) {
-        let (adj1, adj2) : (dLhs: Lhs.Output.Adjustment, dRhs: Rhs.Output.Adjustment) = adjustments(auxiliaryData.0, auxiliaryData.1, auxiliaryData: auxiliaryData.2, gradient: gradient)
-        let (dLhs, bp1) = lhs.adjustment(input: input, auxiliaryData: auxiliaryData.3, gradient: adj1)
-        let (dRhs, bp2) = rhs.adjustment(input: input, auxiliaryData: auxiliaryData.4, gradient: adj2)
-        return ((dLhs, dRhs), bp1 + bp2)
+    func adjustment(input: C.Lhs.Input, auxiliaryData: AuxiliaryData, gradient: C.Output.Adjustment) -> (adjustment: Adjustment, backprop: C.Lhs.Input.Adjustment) {
+        let (adj1, adj2) : (dLhs: C.Lhs.Output.Adjustment, dRhs: C.Rhs.Output.Adjustment) = combinator.adjustments(auxiliaryData.0, auxiliaryData.1, auxiliaryData: auxiliaryData.2, gradient: gradient)
+        let (dLhs, bp1) = combinator.lhs.adjustment(input: input, auxiliaryData: auxiliaryData.3, gradient: adj1)
+        let (dRhs, bp2) = combinator.rhs.adjustment(input: input, auxiliaryData: auxiliaryData.4, gradient: adj2)
+        return (DifferentiablePair(dLhs, dRhs), bp1 + bp2)
     }
     
     @inlinable
-    func backprop(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> Input.Adjustment {
-        let (adj1, adj2) : (dLhs: Lhs.Output.Adjustment, dRhs: Rhs.Output.Adjustment) = adjustments(auxiliaryData.0, auxiliaryData.1, auxiliaryData: auxiliaryData.2, gradient: gradient)
-        return lhs.backprop(input: input, auxiliaryData: auxiliaryData.3, gradient: adj1)
-                + rhs.backprop(input: input, auxiliaryData: auxiliaryData.4, gradient: adj2)
+    func backprop(input: C.Input, auxiliaryData: AuxiliaryData, gradient: C.Output.Adjustment) -> C.Input.Adjustment {
+        let (adj1, adj2) : (dLhs: C.Lhs.Output.Adjustment, dRhs: C.Rhs.Output.Adjustment) = combinator.adjustments(auxiliaryData.0, auxiliaryData.1, auxiliaryData: auxiliaryData.2, gradient: gradient)
+        return combinator.lhs.backprop(input: input, auxiliaryData: auxiliaryData.3, gradient: adj1)
+        + combinator.rhs.backprop(input: input, auxiliaryData: auxiliaryData.4, gradient: adj2)
     }
     
     @inlinable
     mutating func move(_ adjustment: Adjustment) {
-        lhs.move(adjustment.0)
-        rhs.move(adjustment.1)
+        combinator.lhs.move(adjustment.first)
+            combinator.rhs.move(adjustment.second)
     }
     
 }

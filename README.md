@@ -71,9 +71,7 @@ extension Layer {
 }
 ```
 
-If you want to implement pure layers, there's a ```Function``` protocol that will not ask you to implement a ```move``` method.
-
-For optimizers, the current approach is to inject them locally. You can annotate parameters of your model with ```@Optimizable``` in order to indicate that you want adjustments to this parameter to be intercepted.
+If you want to implement pure layers, there's a ```Function``` protocol that will not ask you to implement a ```move``` method. Instead, you are required to specify that the ```Adjustment``` type is ```NoAdjustment<Scalar>``` with an appropriate scalar type.
 
 While DeepSwift leaves the design of concrete layers and optimizers and the implementation of efficient numerics to other (downstream) repos, DeepSwift provides the high level API that you need so you can write:
 

@@ -39,7 +39,7 @@ public extension Layer {
     }
     
     mutating func learn<Loss : Layer>(examples: Input, loss: Loss)  where
-    Loss.Adjustment == Void,
+    Loss.Adjustment == NoAdjustment<Adjustment.Scalar>,
           Loss.AuxiliaryData == Output.Adjustment,
           Loss.Input == Output {
               let (result, derivative) = inspectableApply(examples)
@@ -49,6 +49,7 @@ public extension Layer {
     
 }
 
-public protocol Function : Layer where Adjustment == Void {
-    associatedtype Adjustment = Void
+public protocol Function : Layer where Adjustment == NoAdjustment<Scalar> {
+    associatedtype Scalar
+    associatedtype Adjustment = NoAdjustment<Scalar>
 }

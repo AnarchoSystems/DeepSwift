@@ -37,7 +37,7 @@ public struct Repeat<L : Layer> : Layer where L.Input == L.Output {
     }
     
     @inlinable
-    public func adjustment(input: L.Input, auxiliaryData: [(input: L.Input, aux: L.AuxiliaryData)], gradient: L.Output.Adjustment) -> (adjustment: [L.Adjustment], backprop: L.Input.Adjustment) {
+    public func adjustment(input: L.Input, auxiliaryData: [(input: L.Input, aux: L.AuxiliaryData)], gradient: L.Output.Adjustment) -> (adjustment: DifferentiableArray<L.Adjustment>, backprop: L.Input.Adjustment) {
         var adjustments = [L.Adjustment]()
         adjustments.reserveCapacity(repetitions)
         var bp = gradient
@@ -46,7 +46,7 @@ public struct Repeat<L : Layer> : Layer where L.Input == L.Output {
             bp = newBp
             adjustments.append(adj)
         }
-        return (adjustments, bp)
+        return (DifferentiableArray(adjustments), bp)
     }
     
     @inlinable
@@ -59,8 +59,8 @@ public struct Repeat<L : Layer> : Layer where L.Input == L.Output {
     }
     
     @inlinable
-    public mutating func move(_ adjustment: [L.Adjustment]) {
-        for adj in adjustment {
+    public mutating func move(_ adjustment: DifferentiableArray<L.Adjustment>) {
+        for adj in adjustment.content {
             model.move(adj)
         }
     }

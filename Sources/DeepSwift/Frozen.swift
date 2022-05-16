@@ -15,10 +15,12 @@ public extension Layer {
 
 public struct Frozen<L : Layer> : Layer {
     
+    public typealias Adjustment = NoAdjustment<L.Adjustment.Scalar>
+    
+    
     public typealias Input = L.Input
     public typealias Output = L.Output
     public typealias AuxiliaryData = L.AuxiliaryData
-    public typealias Adjustment = Void
     
     @usableFromInline
     let wrapped : L
@@ -39,8 +41,8 @@ public struct Frozen<L : Layer> : Layer {
     }
     
     @inlinable
-    public func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> (adjustment: Void, backprop: Input.Adjustment) {
-        ((), wrapped.backprop(input: input, auxiliaryData: auxiliaryData, gradient: gradient))
+    public func adjustment(input: Input, auxiliaryData: AuxiliaryData, gradient: Output.Adjustment) -> (adjustment: NoAdjustment<L.Adjustment.Scalar>, backprop: Input.Adjustment) {
+        (NoAdjustment(), wrapped.backprop(input: input, auxiliaryData: auxiliaryData, gradient: gradient))
     }
     
     @inlinable
