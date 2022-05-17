@@ -49,6 +49,64 @@ public protocol RemoteComputation {
     
 }
 
+public protocol RemoteBinaryComputation {
+    
+    associatedtype Arg0
+    associatedtype Arg1
+    associatedtype Output
+    associatedtype Device : DeviceProtocol
+    
+    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
+    func callAsFunction(on device: Device, _ arg0: Arg0, _ arg1: Arg1) -> Output
+    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
+    func encode(to buffer: inout Device.InstructionBuffer) throws
+    
+}
+
+public protocol RemoteTernaryComputation {
+    
+    associatedtype Arg0
+    associatedtype Arg1
+    associatedtype Arg2
+    associatedtype Output
+    associatedtype Device : DeviceProtocol
+    
+    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
+    func callAsFunction(on device: Device, _ arg0: Arg0, _ arg1: Arg1, _ arg2: Arg2) -> Output
+    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
+    func encode(to buffer: inout Device.InstructionBuffer) throws
+    
+}
+
+public protocol RemoteQuaternaryComputation {
+    
+    associatedtype Arg0
+    associatedtype Arg1
+    associatedtype Arg2
+    associatedtype Arg3
+    associatedtype Output
+    associatedtype Device : DeviceProtocol
+    
+    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
+    func callAsFunction(on device: Device, _ arg0: Arg0, _ arg1: Arg1, _ arg2: Arg2, _ arg3: Arg3) -> Output
+    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
+    func encode(to buffer: inout Device.InstructionBuffer) throws
+    
+}
+
+public protocol RemoteReducer {
+    
+    associatedtype Inout
+    associatedtype Visitor
+    associatedtype Device : DeviceProtocol
+    
+    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
+    func callAsFunction(on device: Device, _ mutated: inout Inout, change: Visitor)
+    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
+    func encode(to buffer: inout Device.InstructionBuffer) throws
+    
+}
+
 public struct CPU {
     
     @inlinable
@@ -77,6 +135,38 @@ public extension RemoteComputation where Device == CPU {
     
     func callAsFunction(_ input: Input) -> Output {
         callAsFunction(on: .shared, input: input)
+    }
+    
+}
+
+public extension RemoteBinaryComputation where Device == CPU  {
+    
+    func callAsFunction(_ arg0: Arg0, _ arg1: Arg1) -> Output {
+        callAsFunction(on: .shared, arg0, arg1)
+    }
+    
+}
+
+public extension RemoteTernaryComputation where Device == CPU  {
+    
+    func callAsFunction(_ arg0: Arg0, _ arg1: Arg1, _ arg2: Arg2) -> Output {
+        callAsFunction(on: .shared, arg0, arg1, arg2)
+    }
+    
+}
+
+public extension RemoteQuaternaryComputation where Device == CPU  {
+    
+    func callAsFunction(_ arg0: Arg0, _ arg1: Arg1, _ arg2: Arg2, _ arg3: Arg3) -> Output {
+        callAsFunction(on: .shared, arg0, arg1, arg2, arg3)
+    }
+    
+}
+
+public extension RemoteReducer where Device == CPU  {
+    
+    func callAsFunction(_ mutated: inout Inout, change: Visitor) {
+        callAsFunction(on: .shared, &mutated, change: change)
     }
     
 }
