@@ -23,13 +23,14 @@ public protocol CommittableType {
 }
 
 
-public protocol DeviceProtocol {
+public protocol DeviceProtocol : Codable {
     
     associatedtype InstructionBuffer
     associatedtype RemoteMemory
-    associatedtype FunctionHandle : Codable
+    associatedtype FunctionHandle
     func createInstructionBuffer() -> InstructionBuffer
     func compile(_ instructions: InstructionBuffer) throws -> FunctionHandle
+    func checkExists(_ handle: FunctionHandle) -> Bool
     func execute(_ instructions: FunctionHandle, input: RemoteMemory) -> RemoteMemory
     func delete(_ handle: FunctionHandle) throws
     
@@ -41,8 +42,42 @@ public protocol RemoteComputation {
     associatedtype Output
     associatedtype Device : DeviceProtocol
     
-    func run(on device: Device, input: Input) -> Output
+    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
+    func callAsFunction(on device: Device, input: Input) -> Output
+    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
     func encode(to buffer: inout Device.InstructionBuffer) throws
+    
+}
+
+public struct CPU {
+    
+    @inlinable
+    public static var shared : Self {
+        Self()
+    }
+    
+    @usableFromInline
+    init() {}
+    
+}
+
+public struct CPUAlreadyCompiled : Error {}
+
+extension CPU : DeviceProtocol {
+    
+    public func createInstructionBuffer() {}
+    public func compile(_ instructions: ()) throws { throw CPUAlreadyCompiled() }
+    public func checkExists(_ handle: ()) -> Bool { false }
+    public func execute(_ instructions: (), input: ()) {}
+    public func delete(_ handle: ()) throws {}
+    
+}
+
+public extension RemoteComputation where Device == CPU {
+    
+    func callAsFunction(_ input: Input) -> Output {
+        callAsFunction(on: .shared, input: input)
+    }
     
 }
 
@@ -75,3 +110,6 @@ public struct CompiledRemoteComputation<Input : CommittableType, Output : Fetcha
     }
     
 }
+
+@available(iOS 13.0.0, *)
+extension CompiledRemoteComputation : Codable where Device.FunctionHandle : Codable {}
