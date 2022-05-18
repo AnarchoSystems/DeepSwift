@@ -6,200 +6,221 @@
 //
 
 
-@available(iOS 13.0.0, *)
-public protocol FetchableType {
-    
-    associatedtype Device : DeviceProtocol
-    init(_ raw: Device.RemoteMemory, device: Device) async throws
-    
-}
-
-@available(iOS 13.0.0, *)
-public protocol CommittableType {
-    
-    associatedtype Device : DeviceProtocol
-    func commit(to device: Device) async throws -> Device.RemoteMemory
-    
-}
-
-
 public protocol DeviceProtocol : Codable {
     
     associatedtype InstructionBuffer
-    associatedtype RemoteMemory
+    associatedtype RawPointer
     associatedtype FunctionHandle
     func createInstructionBuffer() -> InstructionBuffer
     func compile(_ instructions: InstructionBuffer) throws -> FunctionHandle
     func checkExists(_ handle: FunctionHandle) -> Bool
-    func execute(_ instructions: FunctionHandle, input: RemoteMemory) -> RemoteMemory
+    func execute(_ instructions: FunctionHandle, input: RawPointer) -> RawPointer
     func delete(_ handle: FunctionHandle) throws
+    func delete(_ memory: RawPointer)
+    func encodeDeletion(of memory: RawPointer, to instructionBuffer: InstructionBuffer)
     
 }
 
-public protocol RemoteComputation {
+public protocol MemoryDescriptor {
     
-    associatedtype Input
-    associatedtype Output
     associatedtype Device : DeviceProtocol
-    
-    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
-    func callAsFunction(on device: Device, input: Input) -> Output
-    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
-    func encode(to buffer: inout Device.InstructionBuffer) throws
+    func allocate(on device: Device) -> Device.RawPointer
+    func encodeAllocation(to buffer: Device.InstructionBuffer) -> Device.RawPointer
     
 }
 
-public protocol RemoteBinaryComputation {
+open class Procedure<Device: DeviceProtocol, Result> {
     
-    associatedtype Arg0
-    associatedtype Arg1
-    associatedtype Output
-    associatedtype Device : DeviceProtocol
+    public let device : Device
     
-    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
-    func callAsFunction(on device: Device, _ arg0: Arg0, _ arg1: Arg1) -> Output
-    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
-    func encode(to buffer: inout Device.InstructionBuffer) throws
+    public init(_ device: Device) {
+        self.device = device
+    }
     
-}
-
-public protocol RemoteTernaryComputation {
-    
-    associatedtype Arg0
-    associatedtype Arg1
-    associatedtype Arg2
-    associatedtype Output
-    associatedtype Device : DeviceProtocol
-    
-    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
-    func callAsFunction(on device: Device, _ arg0: Arg0, _ arg1: Arg1, _ arg2: Arg2) -> Output
-    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
-    func encode(to buffer: inout Device.InstructionBuffer) throws
+    open func evaluate() {}
+    open func encode(to buffer: Device.InstructionBuffer) {}
     
 }
 
-public protocol RemoteQuaternaryComputation {
+open class Symbol<T : MemoryDescriptor> : Procedure<T.Device, T> {
     
-    associatedtype Arg0
-    associatedtype Arg1
-    associatedtype Arg2
-    associatedtype Arg3
-    associatedtype Output
-    associatedtype Device : DeviceProtocol
+    public typealias Device = T.Device
     
-    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
-    func callAsFunction(on device: Device, _ arg0: Arg0, _ arg1: Arg1, _ arg2: Arg2, _ arg3: Arg3) -> Output
-    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
-    func encode(to buffer: inout Device.InstructionBuffer) throws
+    open var memory : Device.RawPointer {
+        fatalError()
+    }
+    
+    public final override func evaluate() {
+        _ = memory
+    }
     
 }
 
-public protocol RemoteReducer {
+public final class AllocatedSymbol<T : MemoryDescriptor> : Symbol<T> {
     
-    associatedtype Inout
-    associatedtype Visitor
-    associatedtype Device : DeviceProtocol
-    
-    /// Runs the computation on the remote device. This method exists so you can debug your computation in an "interpreted" way (where sequencing of instructions is orchestrated by the local CPU) in case you suspect that there's an error in the device's compiler.
-    func callAsFunction(on device: Device, _ mutated: inout Inout, change: Visitor)
-    /// Adds the computation to an instruction buffer if possible. Instruction buffers are a data format that the remote device understands so it can do optimizations such as running the computations in sequence with minimal to zero communication with your local CPU.
-    func encode(to buffer: inout Device.InstructionBuffer) throws
-    
-}
-
-public struct CPU {
-    
+    @usableFromInline
+    let layout : T
+    @usableFromInline
+    var _memory: T.Device.RawPointer?
     @inlinable
-    public static var shared : Self {
-        Self()
+    public override var memory: T.Device.RawPointer {
+        if _memory == nil {
+            _memory = layout.allocate(on: device)
+        }
+        return _memory!
     }
     
     @usableFromInline
-    init() {}
+    init(device: Device, layout: T) {
+        self.layout = layout
+        super.init(device)
+    }
     
-}
-
-public struct CPUAlreadyCompiled : Error {}
-
-extension CPU : DeviceProtocol {
-    
-    public func createInstructionBuffer() {}
-    public func compile(_ instructions: ()) throws { throw CPUAlreadyCompiled() }
-    public func checkExists(_ handle: ()) -> Bool { false }
-    public func execute(_ instructions: (), input: ()) {}
-    public func delete(_ handle: ()) throws {}
-    
-}
-
-public extension RemoteComputation where Device == CPU {
-    
-    func callAsFunction(_ input: Input) -> Output {
-        callAsFunction(on: .shared, input: input)
+    override public func encode(to buffer: Symbol<T>.Device.InstructionBuffer) {
+        _memory = layout.encodeAllocation(to: buffer)
     }
     
 }
 
-public extension RemoteBinaryComputation where Device == CPU  {
+fileprivate protocol NeedsStartup {
+    func beforeEval()
+    func encodePre<T>(to buffer: T)
+}
+
+fileprivate protocol NeesCleanup {
+    func afterEval()
+    func encodePost<T>(to buffer: T)
+}
+
+
+
+/// To be assigned exactly once. Think of this as a declaration of a let constant.
+@propertyWrapper
+public final class Consumed<T : MemoryDescriptor> : NeesCleanup {
     
-    func callAsFunction(_ arg0: Arg0, _ arg1: Arg1) -> Output {
-        callAsFunction(on: .shared, arg0, arg1)
+    public var wrappedValue : Symbol<T>!
+    
+    public init() {}
+    
+    func afterEval() {
+        wrappedValue.device.delete(wrappedValue.memory)
+    }
+    
+    func encodePost<S>(to buffer: S) {
+        wrappedValue.device.encodeDeletion(of: wrappedValue.memory, to: (buffer as! T.Device.InstructionBuffer))
     }
     
 }
 
-public extension RemoteTernaryComputation where Device == CPU  {
+@propertyWrapper
+public final class Local<T : MemoryDescriptor> : NeedsStartup & NeesCleanup {
     
-    func callAsFunction(_ arg0: Arg0, _ arg1: Arg1, _ arg2: Arg2) -> Output {
-        callAsFunction(on: .shared, arg0, arg1, arg2)
+    var layout : T
+    public var wrappedValue : Symbol<T>
+    
+    public init(layout: T, device: T.Device) {
+        self.layout = layout
+        wrappedValue = AllocatedSymbol(device: device, layout: layout)
+    }
+    
+    @inlinable
+    public var projectedValue : Local<T> {
+        self
+    }
+    
+    func beforeEval() {
+        wrappedValue = AllocatedSymbol(device: wrappedValue.device, layout: layout)
+    }
+    
+    func encodePre<S>(to buffer: S) {
+        beforeEval()
+        wrappedValue.encode(to: (buffer as! T.Device.InstructionBuffer))
+    }
+    
+    func afterEval() {
+        wrappedValue.device.delete(wrappedValue.memory)
+    }
+    
+    func encodePost<S>(to buffer: S) {
+        wrappedValue.device.encodeDeletion(of: wrappedValue.memory, to: (buffer as! T.Device.InstructionBuffer))
     }
     
 }
 
-public extension RemoteQuaternaryComputation where Device == CPU  {
+
+@propertyWrapper
+public final class AllocatingReturn<T : MemoryDescriptor> : NeedsStartup {
     
-    func callAsFunction(_ arg0: Arg0, _ arg1: Arg1, _ arg2: Arg2, _ arg3: Arg3) -> Output {
-        callAsFunction(on: .shared, arg0, arg1, arg2, arg3)
+    var layout : T
+    public var wrappedValue : Symbol<T>
+    
+    public init(layout: T, device: T.Device) {
+        self.layout = layout
+        wrappedValue = AllocatedSymbol(device: device, layout: layout)
+    }
+    
+    @inlinable
+    public var projectedValue : AllocatingReturn<T> {
+        self
+    }
+    
+    func beforeEval() {
+        wrappedValue = AllocatedSymbol(device: wrappedValue.device, layout: layout)
+    }
+    
+    func encodePre<S>(to buffer: S) {
+        beforeEval()
+        wrappedValue.encode(to: (buffer as! T.Device.InstructionBuffer))
     }
     
 }
 
-public extension RemoteReducer where Device == CPU  {
+public class Computation<T : MemoryDescriptor> : Symbol<T> {
     
-    func callAsFunction(_ mutated: inout Inout, change: Visitor) {
-        callAsFunction(on: .shared, &mutated, change: change)
+    public var body : Symbol<T> {fatalError("Abstract method")}
+    
+    public override var memory: T.Device.RawPointer {
+        
+        let mirror = Mirror(reflecting: self)
+        
+        for (_, child) in mirror.children {
+            if let needsStartup = child as? NeedsStartup {
+                needsStartup.beforeEval()
+            }
+        }
+        
+        let body = body
+        body.evaluate()
+        
+        for (_, child) in mirror.children {
+            if let needsStartup = child as? NeesCleanup {
+                needsStartup.afterEval()
+            }
+        }
+        
+        return body.memory
+        
+    }
+    
+    public override func encode(to buffer: T.Device.InstructionBuffer) {
+        
+        let mirror = Mirror(reflecting: self)
+        
+        for (_, child) in mirror.children {
+            if let needsStartup = child as? NeedsStartup {
+                needsStartup.encodePre(to: buffer)
+            }
+        }
+        
+        let body = body
+        body.encode(to: buffer)
+        
+        for (_, child) in mirror.children {
+            if let needsStartup = child as? NeesCleanup {
+                needsStartup.encodePost(to: buffer)
+            }
+        }
+        
     }
     
 }
-
-@available(iOS 13.0.0, *)
-public extension RemoteComputation where Input : CommittableType, Output : FetchableType, Input.Device == Device, Output.Device == Device {
-    
-    func deploy(to device: Device) throws -> CompiledRemoteComputation<Input, Output> {
-        var emptyInstructionBuffer = device.createInstructionBuffer()
-        try encode(to: &emptyInstructionBuffer)
-        let handle = try device.compile(emptyInstructionBuffer)
-        return CompiledRemoteComputation(device: device, handle: handle)
-    }
-    
-}
-
-@available(iOS 13.0.0, *)
-public struct CompiledRemoteComputation<Input : CommittableType, Output : FetchableType> where Input.Device == Output.Device {
-    
-    public typealias Device = Input.Device
-    public let device : Device
-    public let handle : Device.FunctionHandle
-    
-    public init(device: Device, handle: Device.FunctionHandle) {
-        self.device = device
-        self.handle = handle
-    }
-    
-    public func run(input: Input) async throws -> Output {
-        try await .init(device.execute(handle, input: input.commit(to: device)), device: device)
-    }
-    
-}
-
-@available(iOS 13.0.0, *)
-extension CompiledRemoteComputation : Codable where Device.FunctionHandle : Codable {}
