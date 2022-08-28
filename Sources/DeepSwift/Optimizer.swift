@@ -14,13 +14,13 @@ public protocol Optimizer {
 }
 
 
-public struct Momentum<Model : Layer> : Optimizer where Model.Adjustment.Scalar : ExpressibleByFloatLiteral, Model.Adjustment.Scalar : Comparable {
+public struct Momentum<Model : Layer> : Optimizer {
     
-    let retain : Model.Adjustment.Scalar
-    let stepWidth : Model.Adjustment.Scalar
+    let retain : Double
+    let stepWidth : Double
     var lastAdjustment : Model.Adjustment?
     
-    public init?(retain: Model.Adjustment.Scalar, stepWidth: Model.Adjustment.Scalar) {
+    public init?(retain: Double, stepWidth: Double) {
         if retain < 0.0 || 1.0 < retain {
             return nil
         }

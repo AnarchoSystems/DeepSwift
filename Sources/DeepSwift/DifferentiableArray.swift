@@ -24,13 +24,11 @@ public struct DifferentiableArray<Element : Movable> : Movable {
 
 extension DifferentiableArray : DiffArithmetic where Element : DiffArithmetic {
     
-    public typealias Scalar = Element.Scalar
-    
     public static prefix func - (arg: DifferentiableArray<Element>) -> DifferentiableArray<Element> {
         DifferentiableArray(arg.content.map(-))
     }
     
-    public static func * (lhs: Element.Scalar, rhs: DifferentiableArray<Element>) -> DifferentiableArray<Element> {
+    public static func * (lhs: Double, rhs: DifferentiableArray<Element>) -> DifferentiableArray<Element> {
         DifferentiableArray(rhs.content.map{lhs * $0})
     }
     

@@ -38,26 +38,28 @@ public extension Movable {
     
 }
 
-public protocol DiffArithmetic : Movable where Scalar.Scalar == Scalar, Adjustment == Self {
-    associatedtype Scalar : DiffArithmetic
-    static func *(lhs: Scalar, rhs: Self) -> Self
+public protocol DiffArithmetic : Movable where Adjustment == Self {
+    static func *(lhs: Double, rhs: Self) -> Self
     static prefix func -(arg: Self) -> Self
 }
 
 extension Float : DiffArithmetic, Movable {
-    public typealias Scalar = Float
+    public static func * (lhs: Double, rhs: Float) -> Float {
+        Float(lhs * Double(rhs))
+    }
     public mutating func move(_ adjustment: Self) {
         self += adjustment
     }
 }
 extension Double : DiffArithmetic, Movable {
-    public typealias Scalar = Double
     public mutating func move(_ adjustment: Self) {
         self += adjustment
     }
 }
 extension Int : DiffArithmetic, Movable {
-    public typealias Scalar = Int
+    public static func * (lhs: Double, rhs: Int) -> Int {
+        Int(lhs * Double(rhs))
+    }
     public mutating func move(_ adjustment: Self) {
         self += adjustment
     }

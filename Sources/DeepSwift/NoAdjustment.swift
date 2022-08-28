@@ -6,7 +6,7 @@
 //
 
 
-public struct NoAdjustment<Scalar : DiffArithmetic> : DiffArithmetic where Scalar.Scalar == Scalar {
+public struct NoAdjustment : DiffArithmetic {
     
     @inlinable
     public init() {}
@@ -17,7 +17,7 @@ public struct NoAdjustment<Scalar : DiffArithmetic> : DiffArithmetic where Scala
     }
     
     @inlinable
-    public static func * (lhs: Scalar, rhs: NoAdjustment<Scalar>) -> NoAdjustment<Scalar> {
+    public static func * (lhs: Double, rhs: NoAdjustment) -> NoAdjustment {
         rhs
     }
     
@@ -25,6 +25,6 @@ public struct NoAdjustment<Scalar : DiffArithmetic> : DiffArithmetic where Scala
 
 public extension Movable {
     
-    func move<Scalar : DiffArithmetic>(_ adjustment: NoAdjustment<Scalar>) {}
+    func move(_ adjustment: NoAdjustment) {}
     
 }

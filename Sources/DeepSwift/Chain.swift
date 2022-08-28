@@ -21,8 +21,6 @@ public extension Layer {
 }
 
 public struct UnsafeOptional<T : DiffArithmetic> : DiffArithmetic {
-   
-    public typealias Scalar = T.Scalar
     
     // deliberately internal
     
@@ -43,7 +41,7 @@ public struct UnsafeOptional<T : DiffArithmetic> : DiffArithmetic {
     }
     
     @inlinable
-    public static func * (lhs: T.Scalar, rhs: UnsafeOptional<T>) -> UnsafeOptional<T> {
+    public static func * (lhs: Double, rhs: UnsafeOptional<T>) -> UnsafeOptional<T> {
         UnsafeOptional(wrapped: lhs * rhs.wrapped.unsafelyUnwrapped)
     }
     
@@ -54,7 +52,7 @@ public struct UnsafeOptional<T : DiffArithmetic> : DiffArithmetic {
     
 }
 
-public struct ChainedLayers<L1 : Layer, L2: Layer> : Layer where L1.Output == L2.Input, L1.Adjustment.Scalar == L2.Adjustment.Scalar {
+public struct ChainedLayers<L1 : Layer, L2: Layer> : Layer where L1.Output == L2.Input {
     
     public typealias AuxiliaryData = (L1.Output?, L2.AuxiliaryData?, L1.AuxiliaryData?)
     public typealias Adjustment = DifferentiablePair<UnsafeOptional<L1.Adjustment>, UnsafeOptional<L2.Adjustment>>

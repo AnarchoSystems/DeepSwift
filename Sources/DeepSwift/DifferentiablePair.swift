@@ -6,9 +6,7 @@
 //
 
 
-public struct DifferentiablePair<S : DiffArithmetic, T: DiffArithmetic> : DiffArithmetic where S.Scalar == T.Scalar {
-     
-    public typealias Scalar = S.Scalar
+public struct DifferentiablePair<S : DiffArithmetic, T: DiffArithmetic> : DiffArithmetic {
     
     public var first : S
     public var second : T
@@ -20,7 +18,7 @@ public struct DifferentiablePair<S : DiffArithmetic, T: DiffArithmetic> : DiffAr
         second.move(adjustment.second)
     }
     
-    public static func * (lhs: S.Scalar, rhs: DifferentiablePair<S, T>) -> DifferentiablePair<S, T> {
+    public static func * (lhs: Double, rhs: DifferentiablePair<S, T>) -> DifferentiablePair<S, T> {
         DifferentiablePair(lhs * rhs.first, lhs * rhs.second)
     }
     public static prefix func - (arg: DifferentiablePair<S, T>) -> DifferentiablePair<S, T> {

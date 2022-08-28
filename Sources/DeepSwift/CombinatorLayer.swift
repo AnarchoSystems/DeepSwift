@@ -6,7 +6,7 @@
 //
 
 public protocol CombinatorLayer : Codable where
-Lhs.Input == Rhs.Input, Input == Lhs.Input, Lhs.Adjustment.Scalar == Rhs.Adjustment.Scalar {
+Lhs.Input == Rhs.Input, Input == Lhs.Input {
     
     associatedtype Input = Lhs.Input
     associatedtype Lhs : Layer
